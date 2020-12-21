@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(mocap_optitrack)
 
 
@@ -18,10 +18,11 @@ endif()
 
 
 find_package(ament_cmake REQUIRED COMPONENTS 
-rclcpp_components 
-geometry_msgs 
+  rclcpp_components
+  rclcpp
+  geometry_msgs 
   tf2
-	)
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -36,27 +37,27 @@ endif()
 
 add_subdirectory(src)
 
-add_executable(ros2_optitrack src/ros2_optitrack.cpp)
-target_include_directories(ros2_optitrack PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(
-  ros2_optitrack
-  "rclcpp_components"
-)
+# add_executable(ros2_optitrack src/ros2_optitrack.cpp)
+# target_include_directories(ros2_optitrack PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>)
+# ament_target_dependencies(
+#   ros2_optitrack
+#   "rclcpp_components"
+# )
 
-install(TARGETS ros2_optitrack
-  DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS ros2_optitrack
+#   DESTINATION lib/${PROJECT_NAME})
 
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-endif()
+# if(BUILD_TESTING)
+#   find_package(ament_lint_auto REQUIRED)
+#   # the following line skips the linter which checks for copyrights
+#   # uncomment the line when a copyright and license is not present in all source files
+#   #set(ament_cmake_copyright_FOUND TRUE)
+#   # the following line skips cpplint (only works in a git repo)
+#   # uncomment the line when this package is not in a git repo
+#   #set(ament_cmake_cpplint_FOUND TRUE)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
-ament_package()
+# ament_package()

@@ -27,16 +27,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <geometry_msgs/Pose2D.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <mocap_optitrack/rigid_body_publisher.h>
+#include <tf2/convert.h>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/transform_broadcaster.h>
+
+#include <chrono>
+#include <geometry_msgs/msg/pose2_d.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 namespace mocap_optitrack {
 
 namespace utilities {
-geometry_msgs::PoseStamped getRosPose(RigidBody const& body,
-                                      bool newCoordinates) {
-  geometry_msgs::PoseStamped poseStampedMsg;
+geometry_msgs::msg::PoseStamped getRosPose(RigidBody const& body,
+                                           bool newCoordinates) {
+  geometry_msgs::msg::PoseStamped poseStampedMsg;
   if (newCoordinates) {
     // Motive 1.7+ coordinate system
     poseStampedMsg.pose.position.x = -body.pose.position.x;
@@ -62,25 +68,32 @@ geometry_msgs::PoseStamped getRosPose(RigidBody const& body,
 }
 }  // namespace utilities
 
-RigidBodyPublisher::RigidBodyPublisher(ros::NodeHandle& nh,
+RigidBodyPublisher::RigidBodyPublisher(rclcpp::Node::SharedPtr nh,
                                        Version const& natNetVersion,
                                        PublisherConfiguration const& config)
-    : config(config) {
+    : config(config), tfPublisher(tf2_ros::TransformBroadcaster(nh)) {
   if (config.publishPose)
-    posePublisher =
-        nh.advertise<geometry_msgs::PoseStamped>(config.poseTopicName, 1000);
+    posePublisher = nh->create_publisher<geometry_msgs::msg::PoseStamped>(
+        config.poseTopicName, 1000);
 
   if (config.publishPose2d)
-    pose2dPublisher =
-        nh.advertise<geometry_msgs::Pose2D>(config.pose2dTopicName, 1000);
+    pose2dPublisher = nh->create_publisher<geometry_msgs::msg::Pose2D>(
+        config.pose2dTopicName, 1000);
 
   // Motive 1.7+ uses a new coordinate system
   useNewCoordinates = (natNetVersion >= Version("1.7"));
+
+  ros_clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
+  system_clock = std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME);
+  buffer = std::make_shared<tf2_ros::Buffer>(system_clock);
+  // Silence error about dedicated thread's being necessary
+  buffer->setUsingDedicatedThread(true);
 }
 
 RigidBodyPublisher::~RigidBodyPublisher() {}
 
-void RigidBodyPublisher::publish(ros::Time const& time, RigidBody const& body) {
+void RigidBodyPublisher::publish(rclcpp::Time const& time,
+                                 RigidBody const& body) {
   // don't do anything if no new data was provided
   if (!body.hasValidData()) {
     return;
@@ -91,42 +104,55 @@ void RigidBodyPublisher::publish(ros::Time const& time, RigidBody const& body) {
     return;
   }
 
-  geometry_msgs::PoseStamped pose =
+  geometry_msgs::msg::PoseStamped pose =
       utilities::getRosPose(body, useNewCoordinates);
   pose.header.stamp = time;
 
   if (config.publishPose) {
     pose.header.frame_id = config.parentFrameId;
-    posePublisher.publish(pose);
+    posePublisher->publish(pose);
   }
 
-  tf::Quaternion q(pose.pose.orientation.x, pose.pose.orientation.y,
-                   pose.pose.orientation.z, pose.pose.orientation.w);
+  tf2::Quaternion q(pose.pose.orientation.x, pose.pose.orientation.y,
+                    pose.pose.orientation.z, pose.pose.orientation.w);
 
   // publish 2D pose
   if (config.publishPose2d) {
-    geometry_msgs::Pose2D pose2d;
+    geometry_msgs::msg::Pose2D pose2d;
     pose2d.x = pose.pose.position.x;
     pose2d.y = pose.pose.position.y;
-    pose2d.theta = tf::getYaw(q);
-    pose2dPublisher.publish(pose2d);
+
+    pose2d.theta = tf2::getYaw(q);
+    pose2dPublisher->publish(pose2d);
   }
 
   if (config.publishTf) {
     // publish transform
-    tf::Transform transform;
-    transform.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y,
-                                    pose.pose.position.z));
+    tf2::Transform transform;
+    transform.setOrigin(tf2::Vector3(pose.pose.position.x, pose.pose.position.y,
+                                     pose.pose.position.z));
 
     // Handle different coordinate systems (Arena vs. rviz)
     transform.setRotation(q);
-    tfPublisher.sendTransform(tf::StampedTransform(
-        transform, time, config.parentFrameId, config.childFrameId));
+
+    rclcpp::Time rclcpp_time = system_clock->now();
+    tf2::TimePoint tf2_time(
+        std::chrono::nanoseconds(rclcpp_time.nanoseconds()));
+
+    geometry_msgs::msg::TransformStamped transform_stamped;
+    auto a =
+        tf2::Stamped<tf2::Transform>(transform, tf2_time, config.parentFrameId);
+
+    transform_stamped.header.stamp = time;
+    transform_stamped.header.frame_id = config.parentFrameId;
+    transform_stamped.child_frame_id = config.childFrameId;
+    transform_stamped.transform = transform;
+    tfPublisher.sendTransform(transform_stamped);
   }
 }
 
 RigidBodyPublishDispatcher::RigidBodyPublishDispatcher(
-    ros::NodeHandle& nh, Version const& natNetVersion,
+    rclcpp::Node::SharedPtr nh, Version const& natNetVersion,
     PublisherConfigurations const& configs) {
   for (auto const& config : configs) {
     rigidBodyPublisherMap[config.rigidBodyId] = RigidBodyPublisherPtr(
@@ -135,7 +161,7 @@ RigidBodyPublishDispatcher::RigidBodyPublishDispatcher(
 }
 
 void RigidBodyPublishDispatcher::publish(
-    ros::Time const& time, std::vector<RigidBody> const& rigidBodies) {
+    rclcpp::Time const& time, std::vector<RigidBody> const& rigidBodies) {
   for (auto const& rigidBody : rigidBodies) {
     auto const& iter = rigidBodyPublisherMap.find(rigidBody.bodyId);
 

@@ -29,23 +29,25 @@
  */
 #include "mocap_optitrack/mocap_config.h"
 
-#include <XmlRpcValue.h>
+// パラメータサーバから一気にパラメータをとってくるなにかぽい
+// #include <XmlRpcValue.h>
 
 namespace mocap_optitrack {
 
 namespace impl {
 template <typename T>
-bool check_and_get_param(XmlRpc::XmlRpcValue& config_node,
-                         std::string const& key, T& value) {
+bool check_and_get_param(rclcpp::Node& config_node, std::string const& key,
+                         T& value) {
   return false;
 }
 
 template <>
-bool check_and_get_param<std::string>(XmlRpc::XmlRpcValue& config_node,
+bool check_and_get_param<std::string>(rclcpp::Node& config_node,
                                       std::string const& key,
                                       std::string& value) {
-  if (config_node[key].getType() == XmlRpc::XmlRpcValue::TypeString) {
-    value = (std::string&)config_node[key];
+  if (config_node.get_parameter(key).get_type() ==
+      rclcpp::ParameterType::PARAMETER_STRING) {
+    value = config_node.get_parameter(key).as_string();
     return true;
   }
 
@@ -78,42 +80,51 @@ ServerDescription::ServerDescription()
       dataPort(ServerDescription::Default::DataPort),
       multicastIpAddress(ServerDescription::Default::MulticastIpAddress) {}
 
-void NodeConfiguration::fromRosParam(ros::NodeHandle& nh,
+void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
                                      ServerDescription& serverDescription,
                                      PublisherConfigurations& pubConfigs) {
   // Get server cconfiguration from ROS parameter server
-  if (nh.hasParam(rosparam::keys::MulticastIpAddress)) {
-    nh.getParam(rosparam::keys::MulticastIpAddress,
+  if (nh->has_parameter(rosparam::keys::MulticastIpAddress)) {
+    nh->get_parameter(rosparam::keys::MulticastIpAddress,
+                      serverDescription.multicastIpAddress);
+  } else {
+    // RCLCPP_WARN_STREAM isn't implemented yet in dashing.
+    RCLCPP_WARN(nh->get_logger(),
+                "Could not get multicast address, using default: %s",
                 serverDescription.multicastIpAddress);
-  } else {
-    ROS_WARN_STREAM("Could not get multicast address, using default: "
-                    << serverDescription.multicastIpAddress);
   }
 
-  if (nh.hasParam(rosparam::keys::CommandPort)) {
-    nh.getParam(rosparam::keys::CommandPort, serverDescription.commandPort);
+  if (nh->has_parameter(rosparam::keys::CommandPort)) {
+    nh->get_parameter(rosparam::keys::CommandPort,
+                      serverDescription.commandPort);
   } else {
-    ROS_WARN_STREAM("Could not get command port, using default: "
-                    << serverDescription.commandPort);
+    // RCLCPP_WARN_STREAM isn't implemented yet in dashing.
+    RCLCPP_WARN(nh->get_logger(),
+                "Could not get command port, using default: %d",
+                serverDescription.commandPort);
   }
 
-  if (nh.hasParam(rosparam::keys::DataPort)) {
-    nh.getParam(rosparam::keys::DataPort, serverDescription.dataPort);
+  if (nh->has_parameter(rosparam::keys::DataPort)) {
+    nh->get_parameter(rosparam::keys::DataPort, serverDescription.dataPort);
   } else {
-    ROS_WARN_STREAM("Could not get data port, using default: "
-                    << serverDescription.dataPort);
+    // RCLCPP_WARN_STREAM isn't implemented yet in dashing.
+    RCLCPP_WARN(nh->get_logger(), "Could not get data port, using default: %d",
+                serverDescription.dataPort);
   }
 
-  if (nh.hasParam(rosparam::keys::Version)) {
-    nh.getParam(rosparam::keys::Version, serverDescription.version);
+  if (nh->has_parameter(rosparam::keys::Version)) {
+    nh->get_parameter(rosparam::keys::Version, serverDescription.version);
   } else {
-    ROS_WARN_STREAM("Could not get server version, using auto");
+    // RCLCPP_WARN_STREAM isn't implemented yet in dashing.
+    RCLCPP_WARN(nh->get_logger(), "Could not get server version, using auto");
   }
 
   // Parse rigid bodies section
-  if (nh.hasParam(rosparam::keys::RigidBodies)) {
+  if (nh->has_parameter(rosparam::keys::RigidBodies)) {
+    rclcpp::Parameter param;
+    rclcpp::ParameterValue;
     XmlRpc::XmlRpcValue bodyList;
-    nh.getParam(rosparam::keys::RigidBodies, bodyList);
+    nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
 
     if (bodyList.getType() == XmlRpc::XmlRpcValue::TypeStruct &&
         bodyList.size() > 0) {
@@ -133,10 +144,10 @@ void NodeConfiguration::fromRosParam(ros::NodeHandle& nh,
               publisherConfig.poseTopicName);
 
           if (!readPoseTopicName) {
-            ROS_WARN_STREAM("Failed to parse "
-                            << rosparam::keys::PoseTopicName << " for body `"
-                            << publisherConfig.rigidBodyId
-                            << "`. Pose publishing disabled.");
+            RCLCPP_WARN(
+                nh->get_logger(),
+                "Failed to parse %s for body `%d`. Pose publishing disabled.",
+                rosparam::keys::PoseTopicName, publisherConfig.rigidBodyId);
             publisherConfig.publishPose = false;
           } else {
             publisherConfig.publishPose = true;
@@ -147,10 +158,11 @@ void NodeConfiguration::fromRosParam(ros::NodeHandle& nh,
               publisherConfig.pose2dTopicName);
 
           if (!readPose2dTopicName) {
-            ROS_WARN_STREAM("Failed to parse "
-                            << rosparam::keys::Pose2dTopicName << " for body `"
-                            << publisherConfig.rigidBodyId
-                            << "`. Pose publishing disabled.");
+            ROS_WARN_STREAM(rclcpp::get_logger("server"),
+                            "Failed to parse "
+                                << rosparam::keys::Pose2dTopicName
+                                << " for body `" << publisherConfig.rigidBodyId
+                                << "`. Pose publishing disabled.");
             publisherConfig.publishPose2d = false;
           } else {
             publisherConfig.publishPose2d = true;
@@ -166,16 +178,20 @@ void NodeConfiguration::fromRosParam(ros::NodeHandle& nh,
 
           if (!readChildFrameId || !readParentFrameId) {
             if (!readChildFrameId)
-              ROS_WARN_STREAM("Failed to parse "
-                              << rosparam::keys::ChildFrameId << " for body `"
-                              << publisherConfig.rigidBodyId
-                              << "`. TF publishing disabled.");
+              ROS_WARN_STREAM(rclcpp::get_logger("server"),
+                              "Failed to parse "
+                                  << rosparam::keys::ChildFrameId
+                                  << " for body `"
+                                  << publisherConfig.rigidBodyId
+                                  << "`. TF publishing disabled.");
 
             if (!readParentFrameId)
-              ROS_WARN_STREAM("Failed to parse "
-                              << rosparam::keys::ParentFrameId << " for body `"
-                              << publisherConfig.rigidBodyId
-                              << "`. TF publishing disabled.");
+              ROS_WARN_STREAM(rclcpp::get_logger("server"),
+                              "Failed to parse "
+                                  << rosparam::keys::ParentFrameId
+                                  << " for body `"
+                                  << publisherConfig.rigidBodyId
+                                  << "`. TF publishing disabled.");
 
             publisherConfig.publishTf = false;
           } else {

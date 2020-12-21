@@ -35,9 +35,14 @@
   <url type="website">http://ros.org/wiki/mocap_optitrack</url>
   <url type="repository">https://github.com/ros-drivers/mocap_optitrack</url>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roslaunch</build_depend>  <!-- for roslaunch_add_file_check -->
-  <depend>roscpp</depend>
-  <depend>tf</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>tf2</depend>
+  <depend>rclcpp_components</depend>
   <depend>geometry_msgs</depend>
+    <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
 </package>

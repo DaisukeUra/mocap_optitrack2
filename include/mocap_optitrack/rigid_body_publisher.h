@@ -33,30 +33,38 @@
 #include <mocap_optitrack/data_model.h>
 #include <mocap_optitrack/mocap_config.h>
 #include <mocap_optitrack/version.h>
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_broadcaster.h>
 
+#include <geometry_msgs/msg/pose2_d.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <map>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 namespace mocap_optitrack {
 
 /// \brief Encapsulation of a RigidBody data publisher.
 class RigidBodyPublisher {
  public:
-  RigidBodyPublisher(ros::NodeHandle& nh, Version const& natNetVersion,
+  RigidBodyPublisher(rclcpp::Node::SharedPtr nh, Version const& natNetVersion,
                      PublisherConfiguration const& config);
   ~RigidBodyPublisher();
-  void publish(ros::Time const& time, RigidBody const&);
+  void publish(rclcpp::Time const& time, RigidBody const&);
 
  private:
   PublisherConfiguration config;
 
   bool useNewCoordinates;
 
-  tf::TransformBroadcaster tfPublisher;
-  ros::Publisher posePublisher;
-  ros::Publisher pose2dPublisher;
+  tf2_ros::TransformBroadcaster tfPublisher;
+
+  std::shared_ptr<tf2_ros::Buffer> buffer;
+  std::shared_ptr<rclcpp::Clock> ros_clock;
+  std::shared_ptr<rclcpp::Clock> system_clock;
+
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePublisher;
+  rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr pose2dPublisher;
 };
 
 /// \brief Dispatches RigidBody data to the correct publisher.
@@ -66,9 +74,10 @@ class RigidBodyPublishDispatcher {
   RigidBodyPublisherMap rigidBodyPublisherMap;
 
  public:
-  RigidBodyPublishDispatcher(ros::NodeHandle& nh, Version const& natNetVersion,
+  RigidBodyPublishDispatcher(rclcpp::Node::SharedPtr nh,
+                             Version const& natNetVersion,
                              PublisherConfigurations const& configs);
-  void publish(ros::Time const& time, std::vector<RigidBody> const&);
+  void publish(rclcpp::Time const& time, std::vector<RigidBody> const&);
 };
 
 }  // namespace mocap_optitrack

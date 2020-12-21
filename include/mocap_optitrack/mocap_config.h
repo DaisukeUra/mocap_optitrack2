@@ -30,8 +30,7 @@
 #ifndef __MOCAP_OPTITRACK_MOCAP_CONFIG_H__
 #define __MOCAP_OPTITRACK_MOCAP_CONFIG_H__
 
-#include <ros/ros.h>
-
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
@@ -69,7 +68,7 @@ typedef std::vector<PublisherConfiguration> PublisherConfigurations;
 
 /// \brief Handles loading node configuration from different sources
 struct NodeConfiguration {
-  static void fromRosParam(ros::NodeHandle& nh,
+  static void fromRosParam(rclcpp::Node::SharedPtr nh,
                            ServerDescription& serverDescription,
                            PublisherConfigurations& pubConfigs);
 };
