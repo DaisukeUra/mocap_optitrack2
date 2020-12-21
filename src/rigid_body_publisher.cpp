@@ -129,11 +129,12 @@ void RigidBodyPublisher::publish(rclcpp::Time const& time,
   if (config.publishTf) {
     // publish transform
     tf2::Transform transform;
-    transform.setOrigin(tf2::Vector3(pose.pose.position.x, pose.pose.position.y,
-                                     pose.pose.position.z));
+    // transform.setOrigin(tf2::Vector3(pose.pose.position.x,
+    // pose.pose.position.y,
+    //                                  pose.pose.position.z));
 
     // Handle different coordinate systems (Arena vs. rviz)
-    transform.setRotation(q);
+    // transform.setRotation(q);
 
     rclcpp::Time rclcpp_time = system_clock->now();
     tf2::TimePoint tf2_time(
@@ -143,10 +144,14 @@ void RigidBodyPublisher::publish(rclcpp::Time const& time,
     auto a =
         tf2::Stamped<tf2::Transform>(transform, tf2_time, config.parentFrameId);
 
+    geometry_msgs::msg::Transform gt;
+    tf2::convert(pose, transform);
+    tf2::convert(transform, gt);
+
     transform_stamped.header.stamp = time;
     transform_stamped.header.frame_id = config.parentFrameId;
     transform_stamped.child_frame_id = config.childFrameId;
-    transform_stamped.transform = transform;
+    transform_stamped.transform = gt;
     tfPublisher.sendTransform(transform_stamped);
   }
 }
