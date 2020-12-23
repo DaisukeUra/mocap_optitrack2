@@ -68,7 +68,7 @@ geometry_msgs::msg::PoseStamped getRosPose(RigidBody const& body,
 }
 }  // namespace utilities
 
-RigidBodyPublisher::RigidBodyPublisher(rclcpp::Node::SharedPtr nh,
+RigidBodyPublisher::RigidBodyPublisher(rclcpp::Node* nh,
                                        Version const& natNetVersion,
                                        PublisherConfiguration const& config)
     : config(config), tfPublisher(tf2_ros::TransformBroadcaster(nh)) {
@@ -157,7 +157,7 @@ void RigidBodyPublisher::publish(rclcpp::Time const& time,
 }
 
 RigidBodyPublishDispatcher::RigidBodyPublishDispatcher(
-    rclcpp::Node::SharedPtr nh, Version const& natNetVersion,
+    rclcpp::Node* nh, Version const& natNetVersion,
     PublisherConfigurations const& configs) {
   for (auto const& config : configs) {
     rigidBodyPublisherMap[config.rigidBodyId] = RigidBodyPublisherPtr(

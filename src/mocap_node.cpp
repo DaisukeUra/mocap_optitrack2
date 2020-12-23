@@ -46,7 +46,7 @@ class OptiTrackRosBridge : public rclcpp::Node {
  public:
   OptiTrackRosBridge(const rclcpp::NodeOptions& options)
       : Node("mocap_node", options) {
-    nh = this->make_shared();
+    nh = this;
   };
 
   void initialize(ServerDescription const& serverDescr,
@@ -118,7 +118,7 @@ class OptiTrackRosBridge : public rclcpp::Node {
     return false;
   };
 
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node* nh;
   ServerDescription serverDescription;
   PublisherConfigurations publisherConfigurations;
   DataModel dataModel;

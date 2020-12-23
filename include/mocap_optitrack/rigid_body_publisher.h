@@ -47,7 +47,7 @@ namespace mocap_optitrack {
 /// \brief Encapsulation of a RigidBody data publisher.
 class RigidBodyPublisher {
  public:
-  RigidBodyPublisher(rclcpp::Node::SharedPtr nh, Version const& natNetVersion,
+  RigidBodyPublisher(rclcpp::Node* nh, Version const& natNetVersion,
                      PublisherConfiguration const& config);
   ~RigidBodyPublisher();
   void publish(rclcpp::Time const& time, RigidBody const&);
@@ -74,8 +74,7 @@ class RigidBodyPublishDispatcher {
   RigidBodyPublisherMap rigidBodyPublisherMap;
 
  public:
-  RigidBodyPublishDispatcher(rclcpp::Node::SharedPtr nh,
-                             Version const& natNetVersion,
+  RigidBodyPublishDispatcher(rclcpp::Node* nh, Version const& natNetVersion,
                              PublisherConfigurations const& configs);
   void publish(rclcpp::Time const& time, std::vector<RigidBody> const&);
 };

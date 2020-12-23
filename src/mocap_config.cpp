@@ -113,7 +113,8 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
   }
 
   if (nh->has_parameter(rosparam::keys::Version)) {
-    nh->get_parameter(rosparam::keys::Version, serverDescription.version);
+    serverDescription.version.push_back(
+        nh->get_parameter(rosparam::keys::Version).as_int());
   } else {
     // RCLCPP_WARN_STREAM isn't implemented yet in dashing.
     RCLCPP_WARN(nh->get_logger(), "Could not get server version, using auto");
@@ -121,8 +122,8 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
 
   // Parse rigid bodies section
   if (nh->has_parameter(rosparam::keys::RigidBodies)) {
-    rclcpp::Parameter param;
-    rclcpp::ParameterValue;
+    // rclcpp::Parameter param;
+    // rclcpp::ParameterValue;
 
     //    XmlRpc::XmlRpcValue bodyList;
     //  nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
