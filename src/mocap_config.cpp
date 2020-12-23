@@ -123,13 +123,22 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
   if (nh->has_parameter(rosparam::keys::RigidBodies)) {
     rclcpp::Parameter param;
     rclcpp::ParameterValue;
-    XmlRpc::XmlRpcValue bodyList;
-    nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
 
-    if (bodyList.getType() == XmlRpc::XmlRpcValue::TypeStruct &&
-        bodyList.size() > 0) {
-      XmlRpc::XmlRpcValue::iterator iter;
-      // for (iter = bodyList.begin(); iter != bodyList.end(); ++iter) {
+    //    XmlRpc::XmlRpcValue bodyList;
+    //  nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
+    auto bodyList = nh->list_parameters({"ridig_bodies"}, 10);
+
+    if (bodyList.names.size() > 0) {
+      // bodyList は たぶん
+      // .first = 名前
+      // .second = 設定
+      // になってると思う
+      // それを踏まえるとまず名前を抜き出さないといけない
+      std::set<std::string> bodyIdList;
+      for (auto name : bodyList.names) {
+        bodyIdList.insert(name);
+      }
+
       for (auto const& iter : bodyList) {
         std::string strBodyId = iter.first;
         XmlRpc::XmlRpcValue bodyParameters = iter.second;
