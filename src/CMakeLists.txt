@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.5)
+
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -20,6 +22,11 @@ find_package(rclcpp_components REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_msgs REQUIRED)
+find_package(tf2_tools REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 
 
@@ -38,7 +45,7 @@ add_executable(${PROJECT_NAME}_mocap_node
 # include_directories(include /opt/ros/dashing/include/)
 
 target_link_libraries(${PROJECT_NAME}_mocap_node)
-ament_target_dependencies(${PROJECT_NAME}_mocap_node "rclcpp" "rclcpp_components" "std_msgs")
+ament_target_dependencies(${PROJECT_NAME}_mocap_node "rclcpp" "rclcpp_components" "std_msgs" "tf2_ros" "tf2" "geometry_msgs" "tf2_msgs" "tf2_tools")
 target_include_directories(${PROJECT_NAME}_mocap_node PUBLIC
   ../include
 )

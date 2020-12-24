@@ -17,11 +17,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-find_package(ament_cmake REQUIRED COMPONENTS 
+find_package(ament_cmake REQUIRED  
   rclcpp_components
   rclcpp
   geometry_msgs 
   tf2
+  tf2_ros
 )
 
 if(BUILD_TESTING)
@@ -44,6 +45,7 @@ add_subdirectory(src)
 # ament_target_dependencies(
 #   ros2_optitrack
 #   "rclcpp_components"
+#   "tf2_ros"
 # )
 
 # install(TARGETS ros2_optitrack

@@ -37,6 +37,17 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
+// このconvertはまだテスト．適当に実装しているので修正が必要だと思われる．
+namespace tf2 {
+void convert(geometry_msgs::msg::PoseStamped pose, tf2::Transform& transform) {
+  transform.setOrigin(tf2::Vector3{pose.pose.position.x, pose.pose.position.y,
+                                   pose.pose.position.z});
+  transform.setRotation(
+      tf2::Quaternion{pose.pose.orientation.x, pose.pose.orientation.y,
+                      pose.pose.orientation.z, pose.pose.orientation.w});
+}
+}  // namespace tf2
+
 namespace mocap_optitrack {
 
 namespace utilities {
