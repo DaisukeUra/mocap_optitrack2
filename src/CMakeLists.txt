@@ -63,3 +63,10 @@ ament_export_dependencies(rclcpp_components)
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
+
+ament_export_libraries(${PROJECT_NAME}_mocap_node)
+
+install(TARGETS ${PROJECT_NAME}_mocap_node
+  DESTINATION lib/${PROJECT_NAME})
+
+# ament_package()

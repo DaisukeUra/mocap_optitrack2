@@ -17,13 +17,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-find_package(ament_cmake REQUIRED  
-  rclcpp_components
-  rclcpp
-  geometry_msgs 
-  tf2
-  tf2_ros
-)
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_msgs REQUIRED)
+find_package(tf2_tools REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -38,18 +44,6 @@ endif()
 
 add_subdirectory(src)
 
-# add_executable(ros2_optitrack src/ros2_optitrack.cpp)
-# target_include_directories(ros2_optitrack PUBLIC
-#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#   $<INSTALL_INTERFACE:include>)
-# ament_target_dependencies(
-#   ros2_optitrack
-#   "rclcpp_components"
-#   "tf2_ros"
-# )
-
-# install(TARGETS ros2_optitrack
-#   DESTINATION lib/${PROJECT_NAME})
 
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)
