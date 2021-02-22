@@ -44,13 +44,13 @@ namespace mocap_optitrack {
 
 class OptiTrackRosBridge : public rclcpp::Node {
  public:
-  OptiTrackRosBridge(const rclcpp::NodeOptions& options)
+  OptiTrackRosBridge(const rclcpp::NodeOptions &options)
       : Node("mocap_node", options) {
     nh = this;
   };
 
-  void initialize(ServerDescription const& serverDescr,
-                  PublisherConfigurations const& pubConfigs) {
+  void initialize(ServerDescription const &serverDescr,
+                  PublisherConfigurations const &pubConfigs) {
     serverDescription = serverDescr;
     publisherConfigurations = pubConfigs;
     // Create socket
@@ -83,19 +83,17 @@ class OptiTrackRosBridge : public rclcpp::Node {
   };
 
   void run() {
-    while (rclcpp::ok()) {
-      if (updateDataModelFromServer()) {
-        // Maybe we got some data? If we did it would be in the form of one or
-        // more rigid bodies in the data model
-        rclcpp::Time time = this->now();
-        publishDispatcherPtr->publish(time, dataModel.dataFrame.rigidBodies);
+    if (updateDataModelFromServer()) {
+      // Maybe we got some data? If we did it would be in the form of one or
+      // more rigid bodies in the data model
+      rclcpp::Time time = this->now();
+      publishDispatcherPtr->publish(time, dataModel.dataFrame.rigidBodies);
 
-        // Clear out the model to prepare for the next frame of data
-        dataModel.clear();
+      // Clear out the model to prepare for the next frame of data
+      dataModel.clear();
 
-        // If we processed some data, take a short break
-        usleep(10);
-      }
+      // If we processed some data, take a short break
+      usleep(10);
     }
   }
 
@@ -105,7 +103,7 @@ class OptiTrackRosBridge : public rclcpp::Node {
     int numBytesReceived = multicastClientSocketPtr->recv();
     if (numBytesReceived > 0) {
       // Grab latest message buffer
-      const char* pMsgBuffer = multicastClientSocketPtr->getBuffer();
+      const char *pMsgBuffer = multicastClientSocketPtr->getBuffer();
 
       // Copy char* buffer into MessageBuffer and dispatch to be deserialized
       natnet::MessageBuffer msgBuffer(pMsgBuffer,
@@ -118,7 +116,7 @@ class OptiTrackRosBridge : public rclcpp::Node {
     return false;
   };
 
-  rclcpp::Node* nh;
+  rclcpp::Node *nh;
   ServerDescription serverDescription;
   PublisherConfigurations publisherConfigurations;
   DataModel dataModel;
@@ -129,7 +127,7 @@ class OptiTrackRosBridge : public rclcpp::Node {
 }  // namespace mocap_optitrack
 
 ////////////////////////////////////////////////////////////////////////
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   // Initialize ROS node
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions options;
@@ -143,9 +141,12 @@ int main(int argc, char* argv[]) {
   mocap_optitrack::NodeConfiguration::fromRosParam(node, serverDescription,
                                                    publisherConfigurations);
 
+  RCLCPP_INFO(node->get_logger(), "%s",
+              publisherConfigurations.at(0).childFrameId.c_str());
   node->initialize(serverDescription, publisherConfigurations);
-  node->run();
-  rclcpp::spin(node);
-
+  while (rclcpp::ok()) {
+    node->run();
+    rclcpp::spin_some(node);
+  }
   return 0;
 }

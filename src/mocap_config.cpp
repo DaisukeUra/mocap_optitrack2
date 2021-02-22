@@ -134,9 +134,9 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
     // .second = 設定
     // になってると思う
     // それを踏まえるとまず名前を抜き出さないといけない
-    std::set<std::string> bodyIdList;
+    std::vector<std::string> bodyIdList;
     for (auto name : bodyList.prefixes) {
-      bodyIdList.insert(name);
+      bodyIdList.push_back(name.c_str());
     }
 
     for (auto const& id : bodyIdList) {
@@ -150,9 +150,7 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
       std::string paramChildFrameName =
           strBodyId + "." + rosparam::keys::ChildFrameId;
       std::string paramParentFrameName =
-          strBodyId + "." + rosparam::keys::Pose2dTopicName;
-
-      // XmlRpc::XmlRpcValue bodyParameters = iter.second;
+          strBodyId + "." + rosparam::keys::ParentFrameId;
 
       // ここは構造体だったらという条件だったが，ROS2では平たくされちゃうので全部チェック
       if (nh->has_parameter(paramPoseTopicName) &&
@@ -161,7 +159,12 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
           nh->has_parameter(paramParentFrameName)) {
         // Load configuration for this rigid body from ROS
         PublisherConfiguration publisherConfig;
-        std::sscanf(strBodyId.c_str(), "%d", &publisherConfig.rigidBodyId);
+
+        // id 切りだし
+        auto pos_period = strBodyId.find(".");
+
+        std::sscanf(strBodyId.substr(pos_period + 1).c_str(), "%d",
+                    &publisherConfig.rigidBodyId);
 
         bool readPoseTopicName = impl::check_and_get_param(
             nh, paramPoseTopicName, publisherConfig.poseTopicName);
