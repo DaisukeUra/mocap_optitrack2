@@ -63,10 +63,10 @@ const std::string ServerDescription::Default::MulticastIpAddress = "224.0.0.1";
 // Param keys
 namespace rosparam {
 namespace keys {
-const std::string MulticastIpAddress = "optitrack_config/multicast_address";
-const std::string CommandPort = "optitrack_config/command_port";
-const std::string DataPort = "optitrack_config/data_port";
-const std::string Version = "optitrack_config/version";
+const std::string MulticastIpAddress = "optitrack_config.multicast_address";
+const std::string CommandPort = "optitrack_config.command_port";
+const std::string DataPort = "optitrack_config.data_port";
+const std::string Version = "optitrack_config.version";
 const std::string RigidBodies = "rigid_bodies";
 const std::string PoseTopicName = "pose";
 const std::string Pose2dTopicName = "pose2d";
@@ -121,108 +121,102 @@ void NodeConfiguration::fromRosParam(rclcpp::Node::SharedPtr nh,
   }
 
   // Parse rigid bodies section
-  if (nh->has_parameter(rosparam::keys::RigidBodies)) {
-    // rclcpp::Parameter param;
-    // rclcpp::ParameterValue;
+  // rclcpp::Parameter param;
+  // rclcpp::ParameterValue;
 
-    //    XmlRpc::XmlRpcValue bodyList;
-    //  nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
-    auto bodyList = nh->list_parameters({"ridig_bodies"}, 10);
+  //    XmlRpc::XmlRpcValue bodyList;
+  //  nh->get_parameter(rosparam::keys::RigidBodies, bodyList);
+  auto bodyList = nh->list_parameters({rosparam::keys::RigidBodies}, 10);
 
-    if (bodyList.names.size() > 0) {
-      // bodyList は たぶん
-      // .first = 名前
-      // .second = 設定
-      // になってると思う
-      // それを踏まえるとまず名前を抜き出さないといけない
-      std::set<std::string> bodyIdList;
-      for (auto name : bodyList.names) {
-        bodyIdList.insert(name);
-      }
+  if (bodyList.prefixes.size() > 0) {
+    // （元の）bodyList は たぶん
+    // .first = 名前
+    // .second = 設定
+    // になってると思う
+    // それを踏まえるとまず名前を抜き出さないといけない
+    std::set<std::string> bodyIdList;
+    for (auto name : bodyList.prefixes) {
+      bodyIdList.insert(name);
+    }
 
-      for (auto const& id : bodyIdList) {
-        std::string strBodyId = id;
+    for (auto const& id : bodyIdList) {
+      std::string strBodyId = id;
 
-        // ここで各パラメータの名前を準備する
-        std::string paramPoseTopicName = rosparam::keys::RigidBodies + "." +
-                                         strBodyId + "." +
-                                         rosparam::keys::PoseTopicName;
-        std::string paramPose2dTopicName = rosparam::keys::RigidBodies + "." +
-                                           strBodyId + "." +
-                                           rosparam::keys::Pose2dTopicName;
-        std::string paramChildFrameName = rosparam::keys::RigidBodies + "." +
-                                          strBodyId + "." +
-                                          rosparam::keys::ChildFrameId;
-        std::string paramParentFrameName = rosparam::keys::ParentFrameId + "." +
-                                           strBodyId + "." +
-                                           rosparam::keys::Pose2dTopicName;
+      // ここで各パラメータの名前を準備する
+      std::string paramPoseTopicName =
+          strBodyId + "." + rosparam::keys::PoseTopicName;
+      std::string paramPose2dTopicName =
+          strBodyId + "." + rosparam::keys::Pose2dTopicName;
+      std::string paramChildFrameName =
+          strBodyId + "." + rosparam::keys::ChildFrameId;
+      std::string paramParentFrameName =
+          strBodyId + "." + rosparam::keys::Pose2dTopicName;
 
-        // XmlRpc::XmlRpcValue bodyParameters = iter.second;
+      // XmlRpc::XmlRpcValue bodyParameters = iter.second;
 
-        // ここは構造体だったらという条件だったが，ROS2では平たくされちゃうので全部チェック
-        if (nh->has_parameter(paramPoseTopicName) &&
-            nh->has_parameter(paramPose2dTopicName) &&
-            nh->has_parameter(paramChildFrameName) &&
-            nh->has_parameter(paramParentFrameName)) {
-          // Load configuration for this rigid body from ROS
-          PublisherConfiguration publisherConfig;
-          std::sscanf(strBodyId.c_str(), "%d", &publisherConfig.rigidBodyId);
+      // ここは構造体だったらという条件だったが，ROS2では平たくされちゃうので全部チェック
+      if (nh->has_parameter(paramPoseTopicName) &&
+          nh->has_parameter(paramPose2dTopicName) &&
+          nh->has_parameter(paramChildFrameName) &&
+          nh->has_parameter(paramParentFrameName)) {
+        // Load configuration for this rigid body from ROS
+        PublisherConfiguration publisherConfig;
+        std::sscanf(strBodyId.c_str(), "%d", &publisherConfig.rigidBodyId);
 
-          bool readPoseTopicName = impl::check_and_get_param(
-              nh, paramPoseTopicName, publisherConfig.poseTopicName);
+        bool readPoseTopicName = impl::check_and_get_param(
+            nh, paramPoseTopicName, publisherConfig.poseTopicName);
 
-          if (!readPoseTopicName) {
-            RCLCPP_WARN(
-                nh->get_logger(),
-                "Failed to parse %s for body `%d`. Pose publishing disabled.",
-                paramPoseTopicName, publisherConfig.rigidBodyId);
-            publisherConfig.publishPose = false;
-          } else {
-            publisherConfig.publishPose = true;
-          }
+        if (!readPoseTopicName) {
+          RCLCPP_WARN(
+              nh->get_logger(),
+              "Failed to parse %s for body `%d`. Pose publishing disabled.",
+              paramPoseTopicName, publisherConfig.rigidBodyId);
+          publisherConfig.publishPose = false;
+        } else {
+          publisherConfig.publishPose = true;
+        }
 
-          bool readPose2dTopicName = impl::check_and_get_param(
-              nh, paramPose2dTopicName, publisherConfig.pose2dTopicName);
+        bool readPose2dTopicName = impl::check_and_get_param(
+            nh, paramPose2dTopicName, publisherConfig.pose2dTopicName);
 
-          if (!readPose2dTopicName) {
+        if (!readPose2dTopicName) {
+          RCLCPP_WARN_STREAM(nh->get_logger(),
+                             "Failed to parse "
+                                 << paramPose2dTopicName << " for body `"
+                                 << publisherConfig.rigidBodyId
+                                 << "`. Pose publishing disabled.");
+          publisherConfig.publishPose2d = false;
+        } else {
+          publisherConfig.publishPose2d = true;
+        }
+
+        bool readChildFrameId = impl::check_and_get_param(
+            nh, paramChildFrameName, publisherConfig.childFrameId);
+
+        bool readParentFrameId = impl::check_and_get_param(
+            nh, paramParentFrameName, publisherConfig.parentFrameId);
+
+        if (!readChildFrameId || !readParentFrameId) {
+          if (!readChildFrameId)
             RCLCPP_WARN_STREAM(nh->get_logger(),
                                "Failed to parse "
-                                   << paramPose2dTopicName << " for body `"
+                                   << paramChildFrameName << " for body `"
                                    << publisherConfig.rigidBodyId
-                                   << "`. Pose publishing disabled.");
-            publisherConfig.publishPose2d = false;
-          } else {
-            publisherConfig.publishPose2d = true;
-          }
+                                   << "`. TF publishing disabled.");
 
-          bool readChildFrameId = impl::check_and_get_param(
-              nh, paramChildFrameName, publisherConfig.childFrameId);
+          if (!readParentFrameId)
+            RCLCPP_WARN_STREAM(nh->get_logger(),
+                               "Failed to parse "
+                                   << paramParentFrameName << " for body `"
+                                   << publisherConfig.rigidBodyId
+                                   << "`. TF publishing disabled.");
 
-          bool readParentFrameId = impl::check_and_get_param(
-              nh, paramParentFrameName, publisherConfig.parentFrameId);
-
-          if (!readChildFrameId || !readParentFrameId) {
-            if (!readChildFrameId)
-              RCLCPP_WARN_STREAM(nh->get_logger(),
-                                 "Failed to parse "
-                                     << paramChildFrameName << " for body `"
-                                     << publisherConfig.rigidBodyId
-                                     << "`. TF publishing disabled.");
-
-            if (!readParentFrameId)
-              RCLCPP_WARN_STREAM(nh->get_logger(),
-                                 "Failed to parse "
-                                     << paramParentFrameName << " for body `"
-                                     << publisherConfig.rigidBodyId
-                                     << "`. TF publishing disabled.");
-
-            publisherConfig.publishTf = false;
-          } else {
-            publisherConfig.publishTf = true;
-          }
-
-          pubConfigs.push_back(publisherConfig);
+          publisherConfig.publishTf = false;
+        } else {
+          publisherConfig.publishTf = true;
         }
+
+        pubConfigs.push_back(publisherConfig);
       }
     }
   }
