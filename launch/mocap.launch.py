@@ -5,15 +5,15 @@ from launch_ros.actions import Node
 def generate_launch_description():
     ld = LaunchDescription()
     config = os.path.join(
-        get_package_share_directory(''),
+        get_package_share_directory('mocap_optitrack'),
         'config',
         'params.yaml'
         )
         
     node=Node(
-        package = 'ros2_tutorials',
-        name = 'your_amazing_node',
-        executable = 'test_yaml_params',
+        package = 'mocap_optitrack',
+        name = 'mocap_node',
+        executable = 'mocap_node',
         parameters = [config]
     )
     ld.add_action(node)
