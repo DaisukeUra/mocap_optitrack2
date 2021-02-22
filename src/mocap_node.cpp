@@ -145,6 +145,7 @@ int main(int argc, char* argv[]) {
 
   node->initialize(serverDescription, publisherConfigurations);
   node->run();
+  rclcpp::spin(node);
 
   return 0;
 }
